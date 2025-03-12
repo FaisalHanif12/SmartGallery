@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Platform, Animated } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -22,17 +22,51 @@ export function AppBarSimple({
 }: AppBarSimpleProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const isDark = colorScheme === 'dark';
+
+  // Create animated values for button press effects
+  const [leftScale] = React.useState(new Animated.Value(1));
+  const [rightScale] = React.useState(new Animated.Value(1));
+
+  // Button press animations
+  const animateButtonPress = (scale: Animated.Value) => {
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   return (
     <View style={styles.container}>
       {/* Left Icon */}
       {leftIcon ? (
         <TouchableOpacity
-          style={styles.iconButton}
-          onPress={onLeftIconPress}
+          onPress={() => {
+            animateButtonPress(leftScale);
+            if (onLeftIconPress) onLeftIconPress();
+          }}
           activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <IconSymbol name={leftIcon} size={24} color={colors.text} />
+          <Animated.View 
+            style={[
+              styles.iconButton,
+              { 
+                backgroundColor: isDark ? 'rgba(60, 60, 60, 0.5)' : 'rgba(240, 240, 240, 0.8)',
+                transform: [{ scale: leftScale }] 
+              }
+            ]}
+          >
+            <IconSymbol name={leftIcon} size={22} color={colors.text} />
+          </Animated.View>
         </TouchableOpacity>
       ) : (
         <View style={styles.iconPlaceholder} />
@@ -44,11 +78,24 @@ export function AppBarSimple({
       {/* Right Icon */}
       {rightIcon ? (
         <TouchableOpacity
-          style={styles.iconButton}
-          onPress={onRightIconPress}
+          onPress={() => {
+            animateButtonPress(rightScale);
+            if (onRightIconPress) onRightIconPress();
+          }}
           activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <IconSymbol name={rightIcon} size={24} color={colors.text} />
+          <Animated.View 
+            style={[
+              styles.iconButton,
+              { 
+                backgroundColor: isDark ? 'rgba(60, 60, 60, 0.5)' : 'rgba(240, 240, 240, 0.8)',
+                transform: [{ scale: rightScale }] 
+              }
+            ]}
+          >
+            <IconSymbol name={rightIcon} size={22} color={colors.text} />
+          </Animated.View>
         </TouchableOpacity>
       ) : (
         <View style={styles.iconPlaceholder} />
@@ -62,26 +109,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: Platform.OS === 'ios' ? 44 : 56,
-    paddingHorizontal: 8,
-    paddingTop: Platform.OS === 'ios' ? 0 : 0,
+    height: Platform.OS === 'ios' ? 50 : 60,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 8 : 4,
     width: '100%',
+    marginBottom: 8,
   },
   iconButton: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1.5,
+    elevation: 2,
   },
   iconPlaceholder: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     flex: 1,
     textAlign: 'center',
+    letterSpacing: 0.3,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
   },
 }); 
