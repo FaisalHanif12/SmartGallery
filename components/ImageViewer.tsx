@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     padding: 16,
-    marginTop: 15,
+    marginTop: 20,
   },
   details: {
     fontSize: 15,

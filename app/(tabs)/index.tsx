@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { StyleSheet, View, Animated, StatusBar, Platform } from 'react-native';
+import { router } from 'expo-router';
 import { ThemedView } from '@/components/ThemedView';
 import { AppBar } from '@/components/AppBar';
 import { CategoryTabs } from '@/components/CategoryTabs';
@@ -38,7 +39,8 @@ export default function HomeScreen() {
   };
 
   const handleProfilePress = () => {
-    // Profile settings will be available soon
+    // Navigate to the profile screen
+    router.push('/profile');
   };
 
   const handleFilterPress = () => {
