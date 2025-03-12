@@ -8,7 +8,9 @@ import {
   TextInput, 
   ScrollView,
   Animated,
-  Dimensions
+  Dimensions,
+  StatusBar,
+  Text
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -151,6 +153,12 @@ export default function ProfileScreen() {
   
   return (
     <ThemedView style={styles.container}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
+      
       <LinearGradient
         colors={isDark ? ['#121212', '#1a1a1a', '#202020'] : ['#f8f8f8', '#f0f0f0', '#e8e8e8']}
         style={StyleSheet.absoluteFillObject}
@@ -184,13 +192,13 @@ export default function ProfileScreen() {
               styles.profilePicturePlaceholder,
               { backgroundColor: isDark ? '#2c2c2e' : '#f0f0f0' }
             ]}>
-              <IconSymbol name="person.fill" size={80} color={colors.tint} />
+              <Text style={styles.profileIcon}>👤</Text>
             </View>
           )}
           
           {isEditing && (
             <View style={styles.editOverlay}>
-              <IconSymbol name="camera.fill" size={28} color="#FFFFFF" />
+              <Text style={{ fontSize: 24, color: '#FFFFFF',  }}>📷</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -200,7 +208,10 @@ export default function ProfileScreen() {
           <TextInput
             style={[
               styles.nameInput,
-              { color: colors.text }
+              { 
+                color: colors.text,
+                 
+              }
             ]}
             value={name}
             onChangeText={setName}
@@ -216,20 +227,32 @@ export default function ProfileScreen() {
         {/* Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <ThemedText style={styles.statValue}>{totalPhotos}</ThemedText>
+            <View style={styles.statValueContainer}>
+              <Text style={[styles.statValue, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+                {totalPhotos.toLocaleString()}
+              </Text>
+            </View>
             <View style={styles.statLabelContainer}>
-              <IconSymbol name="photo" size={16} color={isDark ? '#aaaaaa' : '#777777'} />
-              <ThemedText style={styles.statLabel}>Photos</ThemedText>
+              <Text style={styles.statIcon}>📷</Text>
+              <Text style={[styles.statLabel, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+                Photos
+              </Text>
             </View>
           </View>
           
           <View style={styles.divider} />
           
           <View style={styles.statItem}>
-            <ThemedText style={styles.statValue}>{totalAlbums}</ThemedText>
+            <View style={styles.statValueContainer}>
+              <Text style={[styles.statValue, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+                {totalAlbums.toLocaleString()}
+              </Text>
+            </View>
             <View style={styles.statLabelContainer}>
-              <IconSymbol name="folder" size={16} color={isDark ? '#aaaaaa' : '#777777'} />
-              <ThemedText style={styles.statLabel}>Albums</ThemedText>
+              <Text style={styles.statIcon}>📁</Text>
+              <Text style={[styles.statLabel, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+                Albums
+              </Text>
             </View>
           </View>
         </View>
@@ -249,8 +272,10 @@ export default function ProfileScreen() {
                 }
               ]}
             >
-              <IconSymbol name="pencil.outline" size={18} color={colors.tint} />
-              <ThemedText style={styles.editButtonText}>Edit Profile</ThemedText>
+              <Text style={styles.editButtonIcon}>✏️</Text>
+              <Text style={[styles.editButtonText, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+                Edit Profile
+              </Text>
             </Animated.View>
           </TouchableOpacity>
         )}
@@ -267,9 +292,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 40,
+    paddingTop: 20,
   },
   profilePictureContainer: {
-    marginTop: 30,
+    marginTop: 20,
     width: 160,
     height: 160,
     borderRadius: 80,
@@ -282,11 +308,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
+    backgroundColor: '#2c2c2e',
   },
   profilePicture: {
     width: '100%',
     height: '100%',
     borderRadius: 80,
+    
   },
   profilePicturePlaceholder: {
     width: '100%',
@@ -294,6 +322,10 @@ const styles = StyleSheet.create({
     borderRadius: 80,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  profileIcon: {
+    fontSize: 80,
+    textAlign: 'center',
   },
   editOverlay: {
     position: 'absolute',
@@ -308,7 +340,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginTop: 20,
+    marginTop: 50,
     marginBottom: 10,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
     letterSpacing: 0.3,
@@ -316,7 +348,7 @@ const styles = StyleSheet.create({
   nameInput: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginTop: 20,
+    marginTop: 50,
     marginBottom: 10,
     textAlign: 'center',
     paddingHorizontal: 10,
@@ -327,35 +359,56 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-around',
     alignItems: 'center',
     marginTop: 30,
     marginBottom: 40,
-    width: '90%',
+    width: '100%',
     maxWidth: 400,
+    paddingHorizontal: 10,
+    backgroundColor: 'transparent',
+    zIndex: 1,
+    elevation: 1,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    paddingVertical: 10,
+  },
+  statValueContainer: {
+    backgroundColor: 'transparent',
+    marginBottom: 10,
+    minHeight: 40,
+    justifyContent: 'center',
   },
   statValue: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: 'bold',
-    marginBottom: 8,
+    textAlign: 'center',
+    backgroundColor: 'transparent',
   },
   statLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    minHeight: 24,
+  },
+  statIcon: {
+    fontSize: 18,
+    marginRight: 6,
   },
   statLabel: {
-    fontSize: 15,
-    marginLeft: 6,
-    opacity: 0.6,
+    fontSize: 16,
+    opacity: 0.8,
     fontWeight: '500',
+    backgroundColor: 'transparent',
   },
   divider: {
     width: 1,
-    height: 50,
+    height: 60,
     backgroundColor: '#ccc',
     opacity: 0.5,
     marginHorizontal: 30,
@@ -376,8 +429,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  editButtonIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
   editButtonText: {
-    marginLeft: 10,
     fontWeight: '600',
     fontSize: 16,
   },

@@ -114,6 +114,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 8 : 4,
     width: '100%',
     marginBottom: 8,
+    marginTop: Platform.OS === 'ios' ? 50 : 30,
   },
   iconButton: {
     width: 40,
