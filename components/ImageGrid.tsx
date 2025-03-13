@@ -168,6 +168,7 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
       // Exit selection mode and show tab bar
       setIsSelectionMode(false);
       setSelectedItems([]);
+      setTabBarVisible(true);
       
       // Show success toast instead of alert with the stored count
       showToast(`${selectedCount} items added to favorites`, 'success');
@@ -233,6 +234,7 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
       // Exit selection mode and show tab bar
       setIsSelectionMode(false);
       setSelectedItems([]);
+      setTabBarVisible(true);
       
       // Show success toast instead of alert with the stored count
       showToast(`${selectedCount} items moved to Recently Deleted`, 'success');
@@ -274,14 +276,8 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
 
   // Add a new function to handle adding to hidden images
   const promptForPasscode = () => {
-    if (hasPasscode) {
-      setShowPasscodePrompt(true);
-      setPasscodeInput('');
-      setPasscodeError('');
-    } else {
-      // If no passcode is set, directly add to hidden
-      addToHiddenImages();
-    }
+    // Remove passcode check and directly add to hidden
+    addToHiddenImages();
   };
 
   const addToHiddenImages = async () => {
@@ -294,6 +290,7 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
       // Exit selection mode and show tab bar
       setIsSelectionMode(false);
       setSelectedItems([]);
+      setTabBarVisible(true);
       
       // Show success toast
       showToast(`${selectedCount} items added to Hidden Images`, 'success');
@@ -305,21 +302,6 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
       showToast('Failed to add items to Hidden Images', 'error');
     } finally {
       setShowPasscodePrompt(false);
-    }
-  };
-
-  const handlePasscodeSubmit = async () => {
-    if (!passcodeInput.trim()) {
-      setPasscodeError('Please enter a passcode');
-      return;
-    }
-
-    const isValid = await verifyPasscode(passcodeInput);
-    if (isValid) {
-      addToHiddenImages();
-    } else {
-      setPasscodeError('Invalid passcode');
-      setPasscodeInput('');
     }
   };
 
@@ -361,14 +343,17 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
       
       if (category === 'favorites') {
         // Filter to show only favorites
-        filteredAssets = assets.filter(asset => favorites.includes(asset.id));
+        filteredAssets = assets.filter(asset => 
+          favorites.includes(asset.id) && 
+          !hiddenImages.includes(asset.id) // Don't show hidden images in favorites
+        );
       } else if (category === 'deleted') {
         // Filter to show only deleted items
         filteredAssets = assets.filter(asset => deletedItems.includes(asset.id));
       } else if (category === 'hidden') {
         // Filter to show only hidden items
         filteredAssets = assets.filter(asset => hiddenImages.includes(asset.id));
-      } else if (category === 'all') {
+      } else if (category === 'all' || category === '') {
         // Show all except deleted and hidden items
         filteredAssets = assets.filter(asset => 
           !deletedItems.includes(asset.id) && 
@@ -377,7 +362,10 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
       } else if (category === 'people') {
         // In a real app, you would use face detection
         // For now, we'll just show a subset of images as a placeholder
-        filteredAssets = assets.filter((_, index) => index % 3 === 0);
+        // Also exclude hidden images
+        filteredAssets = assets.filter((asset, index) => 
+          index % 3 === 0 && !hiddenImages.includes(asset.id)
+        );
       }
 
       setPhotos(filteredAssets);
@@ -421,6 +409,8 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
     // Enter selection mode and select the item
     setIsSelectionMode(true);
     setSelectedItems([asset.id]);
+    // Hide tab bar immediately when entering selection mode
+    setTabBarVisible(false);
   };
 
   // Handle press on image
@@ -438,7 +428,8 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
   const cancelSelection = () => {
     setIsSelectionMode(false);
     setSelectedItems([]);
-    // Tab bar visibility is handled by the useEffect
+    // Show tab bar when canceling selection
+    setTabBarVisible(true);
   };
 
   // Render album item
@@ -597,69 +588,6 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
     );
   };
 
-  // Add a passcode prompt modal
-  const renderPasscodePrompt = () => {
-    if (!showPasscodePrompt) return null;
-    
-    return (
-      <View style={styles.modalOverlay}>
-        <View style={[
-          styles.passcodePrompt,
-          { backgroundColor: isDark ? '#2c2c2e' : '#ffffff' }
-        ]}>
-          <ThemedText style={styles.passcodeTitle}>Enter Passcode</ThemedText>
-          <ThemedText style={styles.passcodeSubtitle}>
-            Enter your passcode to add items to Hidden Images
-          </ThemedText>
-          
-          <TextInput
-            style={[
-              styles.passcodeInput,
-              { 
-                color: colors.text,
-                backgroundColor: isDark ? '#1c1c1e' : '#f0f0f0',
-                borderColor: passcodeError ? '#ff3b30' : 'transparent'
-              }
-            ]}
-            value={passcodeInput}
-            onChangeText={setPasscodeInput}
-            placeholder="Enter passcode"
-            placeholderTextColor={colors.text + '50'}
-            secureTextEntry
-            keyboardType="number-pad"
-            autoFocus
-          />
-          
-          {passcodeError ? (
-            <ThemedText style={styles.passcodeError}>{passcodeError}</ThemedText>
-          ) : null}
-          
-          <View style={styles.passcodeButtons}>
-            <TouchableOpacity
-              style={[
-                styles.passcodeButton,
-                { backgroundColor: isDark ? '#1c1c1e' : '#f0f0f0' }
-              ]}
-              onPress={() => setShowPasscodePrompt(false)}
-            >
-              <ThemedText style={styles.passcodeButtonText}>Cancel</ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.passcodeButton,
-                { backgroundColor: colors.tint }
-              ]}
-              onPress={handlePasscodeSubmit}
-            >
-              <ThemedText style={[styles.passcodeButtonText, { color: '#ffffff' }]}>Submit</ThemedText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
-  };
-
   // Permission request view
   if (hasPermission === null) {
     return (
@@ -748,7 +676,6 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
         }
       />
       {renderSelectionActionBar()}
-      {renderPasscodePrompt()}
       <Toast
         visible={toastVisible}
         message={toastMessage}

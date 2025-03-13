@@ -16,6 +16,7 @@ import { IconSymbol } from './ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUIState } from '@/context/UIStateContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -34,6 +35,18 @@ export function ImageViewer({ asset, visible, onClose, onImageUpdated }: ImageVi
   const [isFavorite, setIsFavorite] = useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { setTabBarVisible } = useUIState();
+  
+  // Hide tab bar when image viewer is opened, show it when closed
+  useEffect(() => {
+    if (visible) {
+      setTabBarVisible(false);
+    }
+    
+    return () => {
+      setTabBarVisible(true);
+    };
+  }, [visible, setTabBarVisible]);
   
   // Check if the image is in favorites when it changes
   useEffect(() => {
@@ -115,6 +128,12 @@ export function ImageViewer({ asset, visible, onClose, onImageUpdated }: ImageVi
     }
   };
 
+  // Handle close with tab bar visibility
+  const handleClose = () => {
+    setTabBarVisible(true);
+    onClose();
+  };
+
   if (!asset) return null;
 
   // Format creation date
@@ -126,7 +145,7 @@ export function ImageViewer({ asset, visible, onClose, onImageUpdated }: ImageVi
       visible={visible}
       transparent={false}
       animationType="fade"
-      onRequestClose={onClose}>
+      onRequestClose={handleClose}>
       <SafeAreaView style={[
         styles.container,
         { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }
@@ -144,7 +163,7 @@ export function ImageViewer({ asset, visible, onClose, onImageUpdated }: ImageVi
         ]}>
           <TouchableOpacity 
             style={styles.backButton}
-            onPress={onClose}>
+            onPress={handleClose}>
             <IconSymbol name="chevron.left" size={24} color={colors.text} />
             <ThemedText style={styles.backText}>Gallery</ThemedText>
           </TouchableOpacity>

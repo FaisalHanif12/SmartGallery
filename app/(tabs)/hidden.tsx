@@ -43,6 +43,13 @@ export default function HiddenScreen() {
   const [unlockAnim] = useState(new Animated.Value(0));
   const [shakeAnim] = useState(new Animated.Value(0));
   
+  // Reset unlock state when navigating to this screen
+  useEffect(() => {
+    setIsUnlocked(false);
+    setPasscodeInput('');
+    setPasscodeError('');
+  }, []);
+  
   // Handle passcode verification
   const handleVerifyPasscode = async () => {
     if (!passcodeInput.trim()) {
@@ -429,8 +436,10 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 'bold',
+    alignItems: 'center',
+    textAlign: 'center',
   },
   passcodeContainer: {
     flex: 1,
@@ -448,7 +457,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'center',
