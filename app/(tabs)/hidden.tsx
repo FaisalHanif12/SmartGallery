@@ -8,7 +8,8 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  StatusBar
+  StatusBar,
+  Modal
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,12 +26,13 @@ import { useUIState } from '@/context/UIStateContext';
 const { width } = Dimensions.get('window');
 
 export default function HiddenScreen() {
-  const { hasPasscode, verifyPasscode, theme } = useUIState();
+  const { hasPasscode, verifyPasscode, setPasscode, theme } = useUIState();
   const isDark = theme === 'dark';
   const colors = Colors[isDark ? 'dark' : 'light'];
   
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState('');
+  const [confirmPasscodeInput, setConfirmPasscodeInput] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<MediaLibrary.Asset | null>(null);
@@ -40,14 +42,6 @@ export default function HiddenScreen() {
   // Animation values
   const [unlockAnim] = useState(new Animated.Value(0));
   const [shakeAnim] = useState(new Animated.Value(0));
-  
-  // Check if passcode is set
-  useEffect(() => {
-    if (!hasPasscode) {
-      // If no passcode is set, redirect to settings
-      router.replace('/(tabs)/settings');
-    }
-  }, [hasPasscode]);
   
   // Handle passcode verification
   const handleVerifyPasscode = async () => {
@@ -83,6 +77,36 @@ export default function HiddenScreen() {
       setIsLoading(false);
     }
   };
+
+  // Handle passcode creation
+  const handleCreatePasscode = async () => {
+    if (!passcodeInput.trim()) {
+      setPasscodeError('Please enter a passcode');
+      shakePasscodeInput();
+      return;
+    }
+
+    if (passcodeInput !== confirmPasscodeInput) {
+      setPasscodeError('Passcodes do not match');
+      setConfirmPasscodeInput('');
+      shakePasscodeInput();
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await setPasscode(passcodeInput);
+      // After setting passcode, show verification screen
+      setPasscodeInput('');
+      setConfirmPasscodeInput('');
+      setPasscodeError('');
+    } catch (error) {
+      console.error('Error setting passcode:', error);
+      setPasscodeError('An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Shake animation for invalid passcode
   const shakePasscodeInput = () => {
@@ -108,12 +132,130 @@ export default function HiddenScreen() {
 
   // Handle image updated
   const handleImageUpdated = () => {
-    // Trigger a refresh of the ImageGrid when favorites/deleted status changes
     setRefreshGrid(prev => prev + 1);
   };
   
-  // Render passcode screen
-  const renderPasscodeScreen = () => {
+  // Render passcode creation screen
+  const renderPasscodeCreation = () => {
+    return (
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <LinearGradient
+          colors={isDark ? ['#121212', '#1a1a1a', '#202020'] : ['#f8f8f8', '#f0f0f0', '#e8e8e8']}
+          style={StyleSheet.absoluteFillObject}
+        />
+        
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor="transparent"
+          translucent
+        />
+        
+        <View style={styles.passcodeContainer}>
+          <View style={styles.lockIconContainer}>
+            <IconSymbol 
+              name="lock-closed" 
+              size={40} 
+              color={isDark ? '#ffffff' : '#007AFF'} 
+            />
+          </View>
+          
+          <ThemedText style={styles.title}>Set Passcode</ThemedText>
+          <ThemedText style={styles.subtitle}>Create a passcode to protect your hidden images</ThemedText>
+          
+          <Animated.View 
+            style={{
+              width: '100%',
+              transform: [{ translateX: shakeAnim }],
+            }}
+          >
+            <TextInput
+              style={[
+                styles.passcodeInput,
+                { 
+                  backgroundColor: isDark ? '#1c1c1e' : '#f0f0f0',
+                  color: isDark ? '#ffffff' : '#000000',
+                  borderColor: passcodeError ? '#ff3b30' : isDark ? '#333333' : '#e0e0e0',
+                  marginBottom: 15
+                }
+              ]}
+              placeholder="Enter new passcode"
+              placeholderTextColor={isDark ? '#666666' : '#999999'}
+              value={passcodeInput}
+              onChangeText={setPasscodeInput}
+              secureTextEntry
+              keyboardType="number-pad"
+              autoFocus
+            />
+
+            <TextInput
+              style={[
+                styles.passcodeInput,
+                { 
+                  backgroundColor: isDark ? '#1c1c1e' : '#f0f0f0',
+                  color: isDark ? '#ffffff' : '#000000',
+                  borderColor: passcodeError ? '#ff3b30' : isDark ? '#333333' : '#e0e0e0'
+                }
+              ]}
+              placeholder="Confirm passcode"
+              placeholderTextColor={isDark ? '#666666' : '#999999'}
+              value={confirmPasscodeInput}
+              onChangeText={setConfirmPasscodeInput}
+              secureTextEntry
+              keyboardType="number-pad"
+              onSubmitEditing={handleCreatePasscode}
+            />
+          </Animated.View>
+          
+          {passcodeError ? (
+            <ThemedText style={styles.errorText}>{passcodeError}</ThemedText>
+          ) : null}
+          
+          <TouchableOpacity
+            style={[
+              styles.unlockButton,
+              { 
+                backgroundColor: isDark ? '#ffffff' : '#007AFF',
+                width: '80%',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                marginTop: 30
+              }
+            ]}
+            onPress={handleCreatePasscode}
+            disabled={isLoading}
+          >
+            <ThemedText style={[
+              styles.unlockButtonText,
+              { color: isDark ? '#000000' : '#ffffff' }
+            ]}>
+              {isLoading ? 'Setting...' : 'Set Passcode'}
+            </ThemedText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.cancelButton, { marginTop: 20 }]}
+            onPress={() => router.back()}
+          >
+            <ThemedText style={[
+              styles.cancelButtonText, 
+              { color: isDark ? '#ffffff' : '#000000', opacity: 0.8 }
+            ]}>
+              Cancel
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  };
+
+  // Render passcode verification screen
+  const renderPasscodeVerification = () => {
     return (
       <KeyboardAvoidingView 
         style={styles.container}
@@ -151,7 +293,7 @@ export default function HiddenScreen() {
         >
           <View style={styles.lockIconContainer}>
             <IconSymbol 
-              name="lock.fill" 
+              name="lock-closed" 
               size={40} 
               color={isDark ? '#ffffff' : '#007AFF'} 
             />
@@ -193,21 +335,36 @@ export default function HiddenScreen() {
           <TouchableOpacity
             style={[
               styles.unlockButton,
-              { backgroundColor: colors.tint }
+              { 
+                backgroundColor: isDark ? '#ffffff' : '#007AFF',
+                width: '80%',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                marginTop: 30
+              }
             ]}
             onPress={handleVerifyPasscode}
             disabled={isLoading}
           >
-            <ThemedText style={styles.unlockButtonText}>
+            <ThemedText style={[
+              styles.unlockButtonText,
+              { color: isDark ? '#000000' : '#ffffff' }
+            ]}>
               {isLoading ? 'Verifying...' : 'Unlock'}
             </ThemedText>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={styles.cancelButton}
+            style={[styles.cancelButton, { marginTop: 20 }]}
             onPress={() => router.back()}
           >
-            <ThemedText style={[styles.cancelButtonText, { color: colors.text }]}>
+            <ThemedText style={[
+              styles.cancelButtonText, 
+              { color: isDark ? '#ffffff' : '#000000', opacity: 0.8 }
+            ]}>
               Cancel
             </ThemedText>
           </TouchableOpacity>
@@ -216,9 +373,14 @@ export default function HiddenScreen() {
     );
   };
   
-  // If not unlocked, show passcode screen
-  if (!isUnlocked) {
-    return renderPasscodeScreen();
+  // If not unlocked and no passcode set, show passcode creation
+  if (!isUnlocked && !hasPasscode) {
+    return renderPasscodeCreation();
+  }
+  
+  // If not unlocked and has passcode, show verification
+  if (!isUnlocked && hasPasscode) {
+    return renderPasscodeVerification();
   }
   
   // If unlocked, show hidden images
@@ -260,12 +422,21 @@ export default function HiddenScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  header: {
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
   },
   passcodeContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    width: '100%',
+    paddingHorizontal: 30,
   },
   lockIconContainer: {
     width: 80,
@@ -277,7 +448,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'center',
@@ -287,58 +458,39 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginBottom: 30,
     textAlign: 'center',
-    maxWidth: '80%',
   },
   passcodeInput: {
     width: '100%',
-    maxWidth: 300,
-    height: 60,
+    height: 50,
     borderRadius: 12,
-    paddingHorizontal: 20,
-    fontSize: 18,
-    marginBottom: 15,
+    paddingHorizontal: 15,
+    fontSize: 16,
     borderWidth: 1,
-    alignSelf: 'center',
+    textAlign: 'center'
   },
   errorText: {
     color: '#ff3b30',
     fontSize: 14,
-    marginBottom: 15,
+    marginTop: 10,
+    marginBottom: 20,
     textAlign: 'center',
   },
   unlockButton: {
-    width: '100%',
-    maxWidth: 300,
-    height: 56,
-    borderRadius: 28,
+    height: 50,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
   },
   unlockButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
   },
   cancelButton: {
-    marginTop: 20,
+    marginTop: 15,
     padding: 10,
   },
   cancelButtonText: {
     fontSize: 16,
-  },
-  header: {
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-  },
-  headerTitle: {
-    fontSize: 34,
-    fontWeight: 'bold',
   },
 }); 

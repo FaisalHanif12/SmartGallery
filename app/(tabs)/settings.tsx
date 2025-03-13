@@ -138,12 +138,12 @@ export default function SettingsScreen() {
         animationType="fade"
         onRequestClose={() => setShowPasscodeModal(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <ThemedText style={[
-              styles.modalTitle,
-              { color: isDark ? '#FFFFFF' : '#000000' }
-            ]}>
+        <View style={styles.modalOverlay}>
+          <View style={[
+            styles.modalContent,
+            { backgroundColor: isDark ? '#2c2c2e' : '#ffffff' }
+          ]}>
+            <ThemedText style={styles.modalTitle}>
               {isSettingPasscode 
                 ? 'Set Passcode for Hidden Images' 
                 : 'Reset Passcode for Hidden Images'}
@@ -173,38 +173,34 @@ export default function SettingsScreen() {
                 styles.input,
                 { 
                   backgroundColor: isDark ? '#1c1c1e' : '#f0f0f0',
-                  color: isDark ? '#FFFFFF' : '#000000',
-                  borderColor: passcodeError ? '#ff3b30' : isDark ? '#3a3a3c' : '#e0e0e0',
-                  borderWidth: 1
+                  color: colors.text,
+                  borderColor: passcodeError ? '#ff3b30' : 'transparent'
                 }
               ]}
               placeholder={isSettingPasscode ? "New Passcode" : "New Passcode (optional)"}
-              placeholderTextColor={isDark ? '#999999' : '#777777'}
+              placeholderTextColor={colors.text + '50'}
               value={passcodeInput}
               onChangeText={setPasscodeInput}
               secureTextEntry
               keyboardType="number-pad"
             />
             
-            {isSettingPasscode && (
-              <TextInput
-                style={[
-                  styles.input,
-                  { 
-                    backgroundColor: isDark ? '#1c1c1e' : '#f0f0f0',
-                    color: isDark ? '#FFFFFF' : '#000000',
-                    borderColor: passcodeError ? '#ff3b30' : isDark ? '#3a3a3c' : '#e0e0e0',
-                    borderWidth: 1
-                  }
-                ]}
-                placeholder="Confirm New Passcode"
-                placeholderTextColor={isDark ? '#999999' : '#777777'}
-                value={confirmPasscodeInput}
-                onChangeText={setConfirmPasscodeInput}
-                secureTextEntry
-                keyboardType="number-pad"
-              />
-            )}
+            <TextInput
+              style={[
+                styles.input,
+                { 
+                  backgroundColor: isDark ? '#1c1c1e' : '#f0f0f0',
+                  color: colors.text,
+                  borderColor: passcodeError ? '#ff3b30' : 'transparent'
+                }
+              ]}
+              placeholder="Confirm Passcode"
+              placeholderTextColor={colors.text + '50'}
+              value={confirmPasscodeInput}
+              onChangeText={setConfirmPasscodeInput}
+              secureTextEntry
+              keyboardType="number-pad"
+            />
             
             {passcodeError ? (
               <ThemedText style={styles.errorText}>{passcodeError}</ThemedText>
@@ -218,39 +214,17 @@ export default function SettingsScreen() {
                 ]}
                 onPress={() => setShowPasscodeModal(false)}
               >
-                <ThemedText 
-                  style={[
-                    styles.modalButtonText, 
-                    { color: isDark ? '#FFFFFF' : '#000000' }
-                  ]}
-                >
-                  Cancel
-                </ThemedText>
+                <ThemedText style={styles.modalButtonText}>Cancel</ThemedText>
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={[
                   styles.modalButton,
-                  { 
-                    backgroundColor: isDark ? '#0A84FF' : '#007AFF',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 3,
-                    elevation: 3
-                  }
+                  { backgroundColor: colors.tint }
                 ]}
                 onPress={handlePasscodeSubmit}
               >
-                <ThemedText 
-                  style={[
-                    styles.modalButtonText, 
-                    { 
-                      color: '#FFFFFF',
-                      fontWeight: '700'
-                    }
-                  ]}
-                >
+                <ThemedText style={[styles.modalButtonText, { color: '#ffffff' }]}>
                   {isSettingPasscode ? 'Set Passcode' : 'Update Passcode'}
                 </ThemedText>
               </TouchableOpacity>
@@ -475,24 +449,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '80%',
+    width: '85%',
+    maxWidth: 350,
+    borderRadius: 16,
     padding: 20,
-    borderRadius: 12,
-    backgroundColor: isDark ? '#2c2c2e' : '#ffffff',
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowRadius: 3.84,
     elevation: 5,
   },
   modalTitle: {
@@ -502,11 +474,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   input: {
-    height: 45,
-    marginVertical: 8,
-    paddingHorizontal: 12,
+    width: '100%',
+    height: 50,
     borderRadius: 8,
+    paddingHorizontal: 15,
     fontSize: 16,
+    marginBottom: 15,
+    borderWidth: 1,
   },
   errorText: {
     color: '#ff3b30',
