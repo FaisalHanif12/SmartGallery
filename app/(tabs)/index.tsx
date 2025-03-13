@@ -9,8 +9,8 @@ import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { ImageViewer } from '@/components/ImageViewer';
 import * as MediaLibrary from 'expo-media-library';
 import * as ImagePicker from 'expo-image-picker';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
+import { useUIState } from '@/context/UIStateContext';
 
 export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -19,8 +19,9 @@ export default function HomeScreen() {
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [refreshGrid, setRefreshGrid] = useState(0); // Used to trigger grid refresh
   const scrollY = useRef(new Animated.Value(0)).current;
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { theme } = useUIState();
+  const isDark = theme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
 
   // Calculate header opacity based on scroll position
   const headerOpacity = scrollY.interpolate({
@@ -123,10 +124,10 @@ export default function HomeScreen() {
   return (
     <ThemedView style={[
       styles.container,
-      { backgroundColor: colorScheme === 'dark' ? '#000' : '#f8f8f8' }
+      { backgroundColor: isDark ? '#000' : '#f8f8f8' }
     ]}>
       <StatusBar
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent
       />
@@ -135,7 +136,7 @@ export default function HomeScreen() {
         styles.headerContainer,
         { 
           opacity: headerOpacity,
-          backgroundColor: colorScheme === 'dark' 
+          backgroundColor: isDark 
             ? 'rgba(0, 0, 0, 0.9)' 
             : 'rgba(248, 248, 248, 0.9)',
         }

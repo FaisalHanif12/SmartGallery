@@ -3,8 +3,8 @@ import { StyleSheet, View, TextInput, TouchableOpacity, Platform } from 'react-n
 import { IconSymbol } from './ui/IconSymbol';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
+import { useUIState } from '@/context/UIStateContext';
 
 type AppBarProps = {
   onSearch: (query: string) => void;
@@ -15,8 +15,9 @@ type AppBarProps = {
 export function AppBar({ onSearch, onProfilePress, onFilterPress }: AppBarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const { theme } = useUIState();
+  const isDark = theme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
@@ -34,7 +35,7 @@ export function AppBar({ onSearch, onProfilePress, onFilterPress }: AppBarProps)
           onPress={onProfilePress}>
           <View style={[
             styles.profileIconContainer,
-            { backgroundColor: colorScheme === 'dark' ? '#2c2c2e' : '#f0f0f0' }
+            { backgroundColor: isDark ? '#2c2c2e' : '#f0f0f0' }
           ]}>
             <IconSymbol name="person.crop.circle" size={28} color={colors.tint} />
           </View>
@@ -44,7 +45,7 @@ export function AppBar({ onSearch, onProfilePress, onFilterPress }: AppBarProps)
       <View style={[
         styles.searchContainer,
         { 
-          backgroundColor: colorScheme === 'dark' 
+          backgroundColor: isDark 
             ? 'rgba(44, 44, 46, 0.8)' 
             : 'rgba(240, 240, 240, 0.8)',
           borderColor: isFocused ? colors.tint : 'transparent',
@@ -53,15 +54,15 @@ export function AppBar({ onSearch, onProfilePress, onFilterPress }: AppBarProps)
         <IconSymbol 
           name="magnifyingglass" 
           size={20} 
-          color={isFocused ? colors.tint : colorScheme === 'dark' ? '#aaa' : '#777'} 
+          color={isFocused ? colors.tint : isDark ? '#aaa' : '#777'} 
         />
         <TextInput
           style={[
             styles.searchInput,
-            { color: colorScheme === 'dark' ? '#fff' : '#000' }
+            { color: isDark ? '#fff' : '#000' }
           ]}
           placeholder="Search by people, objects, or events..."
-          placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#777'}
+          placeholderTextColor={isDark ? '#aaa' : '#777'}
           value={searchQuery}
           onChangeText={handleSearch}
           onFocus={() => setIsFocused(true)}
@@ -73,7 +74,7 @@ export function AppBar({ onSearch, onProfilePress, onFilterPress }: AppBarProps)
         >
           <View style={[
             styles.filterIconContainer,
-            { backgroundColor: colorScheme === 'dark' ? '#3a3a3c' : '#e0e0e0' }
+            { backgroundColor: isDark ? '#3a3a3c' : '#e0e0e0' }
           ]}>
             <IconSymbol name="slider.horizontal.3" size={16} color={colors.tint} />
           </View>

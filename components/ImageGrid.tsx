@@ -12,12 +12,12 @@ import {
   RefreshControl,
   Text,
   Platform,
+  TextInput,
 } from 'react-native';
 import * as MediaLibrary from 'expo-media-library';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { IconSymbol } from './ui/IconSymbol';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUIState } from '@/context/UIStateContext';
@@ -48,12 +48,15 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
   const [deletedItems, setDeletedItems] = useState<string[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const { setTabBarVisible } = useUIState();
+  const { theme, setTabBarVisible, hiddenImages, addToHidden, hasPasscode, verifyPasscode } = useUIState();
+  const isDark = theme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+  const [showPasscodePrompt, setShowPasscodePrompt] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState('');
+  const [passcodeError, setPasscodeError] = useState('');
 
   // Load favorites and deleted items from AsyncStorage
   const loadStoredData = useCallback(async () => {
@@ -269,6 +272,57 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
     }
   };
 
+  // Add a new function to handle adding to hidden images
+  const promptForPasscode = () => {
+    if (hasPasscode) {
+      setShowPasscodePrompt(true);
+      setPasscodeInput('');
+      setPasscodeError('');
+    } else {
+      // If no passcode is set, directly add to hidden
+      addToHiddenImages();
+    }
+  };
+
+  const addToHiddenImages = async () => {
+    try {
+      // Store the count before clearing the array
+      const selectedCount = selectedItems.length;
+      
+      await addToHidden(selectedItems);
+      
+      // Exit selection mode and show tab bar
+      setIsSelectionMode(false);
+      setSelectedItems([]);
+      
+      // Show success toast
+      showToast(`${selectedCount} items added to Hidden Images`, 'success');
+      
+      // Reload images
+      loadImages();
+    } catch (error) {
+      console.error('Error adding to hidden images:', error);
+      showToast('Failed to add items to Hidden Images', 'error');
+    } finally {
+      setShowPasscodePrompt(false);
+    }
+  };
+
+  const handlePasscodeSubmit = async () => {
+    if (!passcodeInput.trim()) {
+      setPasscodeError('Please enter a passcode');
+      return;
+    }
+
+    const isValid = await verifyPasscode(passcodeInput);
+    if (isValid) {
+      addToHiddenImages();
+    } else {
+      setPasscodeError('Invalid passcode');
+      setPasscodeInput('');
+    }
+  };
+
   // Main function to load images based on category
   const loadImages = async () => {
     setIsLoading(true);
@@ -311,9 +365,15 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
       } else if (category === 'deleted') {
         // Filter to show only deleted items
         filteredAssets = assets.filter(asset => deletedItems.includes(asset.id));
+      } else if (category === 'hidden') {
+        // Filter to show only hidden items
+        filteredAssets = assets.filter(asset => hiddenImages.includes(asset.id));
       } else if (category === 'all') {
-        // Show all except deleted items
-        filteredAssets = assets.filter(asset => !deletedItems.includes(asset.id));
+        // Show all except deleted and hidden items
+        filteredAssets = assets.filter(asset => 
+          !deletedItems.includes(asset.id) && 
+          !hiddenImages.includes(asset.id)
+        );
       } else if (category === 'people') {
         // In a real app, you would use face detection
         // For now, we'll just show a subset of images as a placeholder
@@ -388,7 +448,7 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
         style={[
           styles.albumContainer,
           {
-            backgroundColor: colorScheme === 'dark' ? '#1c1c1e' : '#fff',
+            backgroundColor: isDark ? '#1c1c1e' : '#fff',
           },
         ]}
         onPress={() => setSelectedAlbum(item.id)}>
@@ -438,7 +498,7 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
             styles.imageContainer,
             {
               height: itemHeight,
-              backgroundColor: colorScheme === 'dark' ? '#1c1c1e' : '#fff',
+              backgroundColor: isDark ? '#1c1c1e' : '#fff',
             },
             isSelected && styles.selectedImageContainer,
           ]}
@@ -488,9 +548,7 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
       <View style={[
         styles.selectionActionBar,
         { 
-          backgroundColor: colorScheme === 'dark' 
-            ? 'rgba(20, 20, 20, 0.95)' 
-            : 'rgba(255, 255, 255, 0.95)',
+          backgroundColor: isDark ? 'rgba(20, 20, 20, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           paddingBottom: Platform.OS === 'ios' ? 34 : 20, // Extra padding for iOS home indicator
         }
       ]}>
@@ -519,12 +577,84 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
           
           <TouchableOpacity 
             style={styles.selectionActionButton}
+            onPress={promptForPasscode}>
+            <View style={styles.actionIconContainer}>
+              <IconSymbol name="eye.slash" size={22} color={colors.text} />
+            </View>
+            <ThemedText style={styles.selectionActionText}>Add to Hidden</ThemedText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.selectionActionButton}
             onPress={cancelSelection}>
             <View style={styles.actionIconContainer}>
               <IconSymbol name="xmark.circle" size={22} color={colors.text} />
             </View>
             <ThemedText style={styles.selectionActionText}>Cancel</ThemedText>
           </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  // Add a passcode prompt modal
+  const renderPasscodePrompt = () => {
+    if (!showPasscodePrompt) return null;
+    
+    return (
+      <View style={styles.modalOverlay}>
+        <View style={[
+          styles.passcodePrompt,
+          { backgroundColor: isDark ? '#2c2c2e' : '#ffffff' }
+        ]}>
+          <ThemedText style={styles.passcodeTitle}>Enter Passcode</ThemedText>
+          <ThemedText style={styles.passcodeSubtitle}>
+            Enter your passcode to add items to Hidden Images
+          </ThemedText>
+          
+          <TextInput
+            style={[
+              styles.passcodeInput,
+              { 
+                color: colors.text,
+                backgroundColor: isDark ? '#1c1c1e' : '#f0f0f0',
+                borderColor: passcodeError ? '#ff3b30' : 'transparent'
+              }
+            ]}
+            value={passcodeInput}
+            onChangeText={setPasscodeInput}
+            placeholder="Enter passcode"
+            placeholderTextColor={colors.text + '50'}
+            secureTextEntry
+            keyboardType="number-pad"
+            autoFocus
+          />
+          
+          {passcodeError ? (
+            <ThemedText style={styles.passcodeError}>{passcodeError}</ThemedText>
+          ) : null}
+          
+          <View style={styles.passcodeButtons}>
+            <TouchableOpacity
+              style={[
+                styles.passcodeButton,
+                { backgroundColor: isDark ? '#1c1c1e' : '#f0f0f0' }
+              ]}
+              onPress={() => setShowPasscodePrompt(false)}
+            >
+              <ThemedText style={styles.passcodeButtonText}>Cancel</ThemedText>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.passcodeButton,
+                { backgroundColor: colors.tint }
+              ]}
+              onPress={handlePasscodeSubmit}
+            >
+              <ThemedText style={[styles.passcodeButtonText, { color: '#ffffff' }]}>Submit</ThemedText>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -618,6 +748,7 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
         }
       />
       {renderSelectionActionBar()}
+      {renderPasscodePrompt()}
       <Toast
         visible={toastVisible}
         message={toastMessage}
@@ -788,5 +919,71 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     textAlign: 'center',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2000,
+  },
+  passcodePrompt: {
+    width: '80%',
+    maxWidth: 350,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  passcodeTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  passcodeSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    opacity: 0.7,
+  },
+  passcodeInput: {
+    width: '100%',
+    height: 50,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+  },
+  passcodeError: {
+    color: '#ff3b30',
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  passcodeButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 10,
+  },
+  passcodeButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  passcodeButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

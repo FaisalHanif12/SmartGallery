@@ -2,8 +2,8 @@ import React from 'react';
 import { StyleSheet, View, TouchableOpacity, Platform, Animated } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { IconSymbol } from './ui/IconSymbol';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
+import { useUIState } from '@/context/UIStateContext';
 
 interface AppBarSimpleProps {
   title: string;
@@ -20,9 +20,9 @@ export function AppBarSimple({
   onLeftIconPress,
   onRightIconPress,
 }: AppBarSimpleProps) {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const isDark = colorScheme === 'dark';
+  const { theme } = useUIState();
+  const isDark = theme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
 
   // Create animated values for button press effects
   const [leftScale] = React.useState(new Animated.Value(1));

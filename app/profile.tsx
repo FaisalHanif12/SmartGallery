@@ -22,8 +22,8 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { AppBarSimple } from '@/components/AppBarSimple';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
+import { useUIState } from '@/context/UIStateContext';
 
 // Storage keys
 const PROFILE_NAME_KEY = 'profile_name';
@@ -32,9 +32,9 @@ const PROFILE_PICTURE_KEY = 'profile_picture_uri';
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const isDark = colorScheme === 'dark';
+  const { theme } = useUIState();
+  const isDark = theme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
   
   const [name, setName] = useState('User');
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
@@ -338,9 +338,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   name: {
-    fontSize: 28,
+    fontSize: 25,
     fontWeight: 'bold',
-    marginTop: 50,
+    marginTop: 90,
     marginBottom: 10,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
     letterSpacing: 0.3,
@@ -348,11 +348,11 @@ const styles = StyleSheet.create({
   nameInput: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginTop: 50,
+    marginTop: 90,
     marginBottom: 10,
     textAlign: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 15,
     borderRadius: 8,
     minWidth: 200,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',

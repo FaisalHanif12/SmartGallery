@@ -14,7 +14,7 @@ const iconMap: { [key: string]: string } = {
   'photo.on.rectangle': 'images-outline',
   'magnifyingglass': 'search-outline',
   'person.2.fill': 'people-outline',
-  'heart.fill': 'heart-outline',
+  'heart.fill': 'heart',
   'gear': 'settings-outline',
   'person.crop.circle': 'person-circle-outline',
   'slider.horizontal.3': 'options-outline',
@@ -30,6 +30,16 @@ const iconMap: { [key: string]: string } = {
   'chevron.left': 'chevron-back',
   'checkmark.circle.fill': 'checkmark-circle',
   'xmark.circle': 'close-circle-outline',
+  'moon.fill': 'moon',
+  'sun.max.fill': 'sunny',
+  'lock.fill': 'lock-closed',
+  'chevron.right': 'chevron-forward',
+  'info.circle.fill': 'information-circle',
+  'eye.slash': 'eye-off',
+  'pencil': 'pencil',
+  'checkmark': 'checkmark',
+  'folder.fill': 'folder',
+  'camera.fill': 'camera',
 };
 
 export function IconSymbol({ name, size, color }: IconSymbolProps) {

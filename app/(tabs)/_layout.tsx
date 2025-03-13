@@ -5,18 +5,18 @@ import { Platform, StyleSheet, View, ViewStyle, Animated } from 'react-native';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { useUIState } from '@/context/UIStateContext';
 
 // Custom tab bar background component
 const CustomTabBarBackground = ({ style }: { style?: ViewStyle }) => {
-  const colorScheme = useColorScheme();
+  const { theme } = useUIState();
+  const isDark = theme === 'dark';
   return (
     <View 
       style={[
         style, 
         { 
-          backgroundColor: colorScheme === 'dark' ? '#1c1c1e' : '#ffffff',
+          backgroundColor: isDark ? '#1c1c1e' : '#ffffff',
           opacity: Platform.OS === 'ios' ? 0.9 : 1,
         }
       ]} 
@@ -25,9 +25,9 @@ const CustomTabBarBackground = ({ style }: { style?: ViewStyle }) => {
 };
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
-  const { isTabBarVisible } = useUIState();
+  const { theme, isTabBarVisible, hasPasscode } = useUIState();
+  const isDark = theme === 'dark';
+  const colors = Colors[isDark ? 'dark' : 'light'];
 
   // Create animated value for tab bar visibility
   const [tabBarHeight] = React.useState(new Animated.Value(isTabBarVisible ? 1 : 0));
@@ -101,6 +101,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="hidden"
+        options={{
+          title: 'Hidden',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[
+              styles.iconContainer,
+              focused && [styles.activeIconContainer, { backgroundColor: `${color}20` }]
+            ]}>
+              <IconSymbol size={22} name="eye-off" color={color} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="edit"
         options={{
           title: 'Edit Image',
@@ -109,7 +123,7 @@ export default function TabLayout() {
               styles.iconContainer,
               focused && [styles.activeIconContainer, { backgroundColor: `${color}20` }]
             ]}>
-              <IconSymbol size={22} name="wand.and.stars" color={color} />
+              <IconSymbol size={22} name="color-wand-outline" color={color} />
             </View>
           ),
         }}
@@ -123,7 +137,7 @@ export default function TabLayout() {
               styles.iconContainer,
               focused && [styles.activeIconContainer, { backgroundColor: `${color}20` }]
             ]}>
-              <IconSymbol size={22} name="gear" color={color} />
+              <IconSymbol size={22} name="settings-outline" color={color} />
             </View>
           ),
         }}

@@ -4,13 +4,22 @@
  */
 
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useUIState } from '@/context/UIStateContext';
+
+type ColorScheme = 'light' | 'dark';
 
 export function useThemeColor(
   props: { light?: string; dark?: string },
   colorName: keyof typeof Colors.light & keyof typeof Colors.dark
 ) {
-  const theme = useColorScheme() ?? 'light';
+  let theme: ColorScheme = 'dark';
+  try {
+    const uiState = useUIState();
+    theme = uiState.theme;
+  } catch (error) {
+    // Default to dark mode if UIStateContext is not available
+  }
+
   const colorFromProps = props[theme];
 
   if (colorFromProps) {
