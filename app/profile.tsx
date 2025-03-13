@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -12,7 +12,7 @@ import {
   StatusBar,
   Text
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as MediaLibrary from 'expo-media-library';
@@ -51,6 +51,17 @@ export default function ProfileScreen() {
     fetchMediaStats();
   }, []);
   
+  // Reload profile data when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Profile screen focused, reloading data');
+      loadProfileData();
+      return () => {
+        // Cleanup function when screen is unfocused
+      };
+    }, [])
+  );
+  
   // Load profile data from AsyncStorage
   const loadProfileData = async () => {
     try {
@@ -62,7 +73,10 @@ export default function ProfileScreen() {
       }
       
       if (storedPicture) {
+        console.log('Loading profile picture from storage:', storedPicture);
         setProfilePicture(storedPicture);
+      } else {
+        console.log('No profile picture found in storage');
       }
     } catch (error) {
       console.error('Error loading profile data:', error);
@@ -114,7 +128,16 @@ export default function ProfileScreen() {
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setProfilePicture(result.assets[0].uri);
+        const newProfilePicUri = result.assets[0].uri;
+        setProfilePicture(newProfilePicUri);
+        
+        // Save profile picture to AsyncStorage immediately
+        try {
+          await AsyncStorage.setItem(PROFILE_PICTURE_KEY, newProfilePicUri);
+          console.log('Profile picture saved successfully');
+        } catch (error) {
+          console.error('Error saving profile picture:', error);
+        }
       }
     } catch (error) {
       console.error('Error selecting profile picture:', error);

@@ -35,9 +35,11 @@ const DELETED_STORAGE_KEY = 'smartgallery_deleted';
 type ImageGridProps = {
   category: string;
   onImagePress: (asset: MediaLibrary.Asset) => void;
+  dateFilter?: { month: number | null; year: number | null };
+  onImagesLoaded?: (count: number) => void;
 };
 
-export function ImageGrid({ category, onImagePress }: ImageGridProps) {
+export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded }: ImageGridProps) {
   const [photos, setPhotos] = useState<MediaLibrary.Asset[]>([]);
   const [albums, setAlbums] = useState<MediaLibrary.Album[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -368,7 +370,38 @@ export function ImageGrid({ category, onImagePress }: ImageGridProps) {
         );
       }
 
+      // Apply date filter if provided
+      if (dateFilter && (dateFilter.month !== null || dateFilter.year !== null)) {
+        filteredAssets = filteredAssets.filter(asset => {
+          const creationDate = new Date(asset.creationTime);
+          const assetMonth = creationDate.getMonth();
+          const assetYear = creationDate.getFullYear();
+          
+          // Filter by both month and year if both are provided
+          if (dateFilter.month !== null && dateFilter.year !== null) {
+            return assetMonth === dateFilter.month && assetYear === dateFilter.year;
+          }
+          
+          // Filter by month only
+          if (dateFilter.month !== null) {
+            return assetMonth === dateFilter.month;
+          }
+          
+          // Filter by year only
+          if (dateFilter.year !== null) {
+            return assetYear === dateFilter.year;
+          }
+          
+          return true;
+        });
+      }
+
       setPhotos(filteredAssets);
+      
+      // Notify parent component about the number of images loaded
+      if (onImagesLoaded) {
+        onImagesLoaded(filteredAssets.length);
+      }
     } catch (error) {
       console.error('Error loading images:', error);
       showToast('Failed to load images from your gallery', 'error');

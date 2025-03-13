@@ -7,6 +7,8 @@ import { CategoryTabs } from '@/components/CategoryTabs';
 import { ImageGrid } from '@/components/ImageGrid';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { ImageViewer } from '@/components/ImageViewer';
+import { FilterModal } from '@/components/FilterModal';
+import { EmptyFilterResult } from '@/components/EmptyFilterResult';
 import * as MediaLibrary from 'expo-media-library';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/Colors';
@@ -18,6 +20,13 @@ export default function HomeScreen() {
   const [selectedImage, setSelectedImage] = useState<MediaLibrary.Asset | null>(null);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [refreshGrid, setRefreshGrid] = useState(0); // Used to trigger grid refresh
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [dateFilter, setDateFilter] = useState<{ month: number | null; year: number | null }>({
+    month: null,
+    year: null
+  });
+  const [noImagesFound, setNoImagesFound] = useState(false);
+  
   const scrollY = useRef(new Animated.Value(0)).current;
   const { theme } = useUIState();
   const isDark = theme === 'dark';
@@ -45,7 +54,18 @@ export default function HomeScreen() {
   };
 
   const handleFilterPress = () => {
-    // Advanced search filters will be available soon
+    setFilterModalVisible(true);
+  };
+
+  const handleApplyFilter = (filter: { month: number | null; year: number | null }) => {
+    setDateFilter(filter);
+    setRefreshGrid(prev => prev + 1); // Refresh grid with new filter
+  };
+
+  const handleClearFilter = () => {
+    setDateFilter({ month: null, year: null });
+    setRefreshGrid(prev => prev + 1);
+    setNoImagesFound(false);
   };
 
   const handleImagePress = (asset: MediaLibrary.Asset) => {
@@ -60,6 +80,20 @@ export default function HomeScreen() {
   const handleImageUpdated = () => {
     // Trigger a refresh of the ImageGrid when favorites/deleted status changes
     setRefreshGrid(prev => prev + 1);
+  };
+
+  const handleImagesLoaded = (count: number) => {
+    setNoImagesFound(count === 0 && (dateFilter.month !== null || dateFilter.year !== null));
+  };
+
+  // Get month name from index
+  const getMonthName = (monthIndex: number | null) => {
+    if (monthIndex === null) return null;
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[monthIndex];
   };
 
   const fabActions = [
@@ -153,11 +187,21 @@ export default function HomeScreen() {
       </Animated.View>
       
       <View style={styles.gridContainer}>
-        <ImageGrid
-          key={`grid-${refreshGrid}`} // Force re-render when refreshGrid changes
-          category={selectedCategory}
-          onImagePress={handleImagePress}
-        />
+        {noImagesFound ? (
+          <EmptyFilterResult 
+            month={getMonthName(dateFilter.month)}
+            year={dateFilter.year}
+            onClearFilter={handleClearFilter}
+          />
+        ) : (
+          <ImageGrid
+            key={`grid-${refreshGrid}`} // Force re-render when refreshGrid changes
+            category={selectedCategory}
+            onImagePress={handleImagePress}
+            dateFilter={dateFilter}
+            onImagesLoaded={handleImagesLoaded}
+          />
+        )}
       </View>
       
       <FloatingActionButton actions={fabActions} />
@@ -168,6 +212,14 @@ export default function HomeScreen() {
         visible={imageViewerVisible}
         onClose={handleImageViewerClose}
         onImageUpdated={handleImageUpdated}
+      />
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        onApplyFilter={handleApplyFilter}
+        currentFilter={dateFilter}
       />
     </ThemedView>
   );
