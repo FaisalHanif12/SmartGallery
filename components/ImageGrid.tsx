@@ -22,7 +22,6 @@ import { Colors } from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUIState } from '@/context/UIStateContext';
 import { Toast } from './ui/Toast';
-import { analyzeImage } from '@/services/openai';
 
 const { width } = Dimensions.get('window');
 const numColumns = 3;
@@ -38,91 +37,10 @@ type ImageGridProps = {
   onImagePress: (asset: MediaLibrary.Asset) => void;
   dateFilter?: { month: number | null; year: number | null };
   onImagesLoaded?: (count: number) => void;
-  searchQuery?: string;
 };
 
-// Create a separate ImageItem component
-const ImageItem = React.memo(({ 
-  item, 
-  index, 
-  isDark, 
-  isFavorite, 
-  isSelected, 
-  onPress, 
-  onLongPress 
-}: { 
-  item: MediaLibrary.Asset; 
-  index: number;
-  isDark: boolean;
-  isFavorite: boolean;
-  isSelected: boolean;
-  onPress: () => void;
-  onLongPress: () => void;
-}) => {
-  const animatedValue = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    Animated.timing(animatedValue, {
-      toValue: 1,
-      duration: 300,
-      delay: index * 50,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  const opacity = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-
-  const scale = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.9, 1],
-  });
-
-  // Vary the height slightly for a masonry-like effect
-  const heightVariation = index % 3 === 0 ? 0 : index % 3 === 1 ? 20 : -20;
-  const itemHeight = imageSize + heightVariation;
-
-  return (
-    <Animated.View style={[styles.imageWrapper, { opacity, transform: [{ scale }] }]}>
-      <TouchableOpacity
-        style={[
-          styles.imageContainer,
-          {
-            height: itemHeight,
-            backgroundColor: isDark ? '#1c1c1e' : '#fff',
-          },
-          isSelected && styles.selectedImageContainer,
-        ]}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        activeOpacity={0.7}>
-        <Image
-          source={{ uri: item.uri }}
-          style={styles.image}
-          resizeMode="cover"
-        />
-        {isFavorite && !isSelected && (
-          <View style={styles.favoriteIcon}>
-            <Text>❤️</Text>
-          </View>
-        )}
-        {isSelected && (
-          <View style={styles.selectionOverlay}>
-            <View style={styles.checkmarkContainer}>
-              <IconSymbol name="checkmark.circle.fill" size={24} color="#ffffff" />
-            </View>
-          </View>
-        )}
-      </TouchableOpacity>
-    </Animated.View>
-  );
-});
-
-export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded, searchQuery }: ImageGridProps) {
+export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded }: ImageGridProps) {
   const [photos, setPhotos] = useState<MediaLibrary.Asset[]>([]);
-  const [filteredPhotos, setFilteredPhotos] = useState<MediaLibrary.Asset[]>([]);
   const [albums, setAlbums] = useState<MediaLibrary.Album[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -141,8 +59,6 @@ export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded, 
   const [showPasscodePrompt, setShowPasscodePrompt] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisProgress, setAnalysisProgress] = useState(0);
 
   // Load favorites and deleted items from AsyncStorage
   const loadStoredData = useCallback(async () => {
@@ -569,65 +485,69 @@ export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded, 
     );
   };
 
-  // Function to analyze images for object search
-  const analyzeImagesForObject = async (assets: MediaLibrary.Asset[], searchObject: string) => {
-    setIsAnalyzing(true);
-    setAnalysisProgress(0);
-    
-    try {
-      const results = await Promise.all(
-        assets.map(async (asset, currentIndex) => {
-          try {
-            const result = await analyzeImage(asset.uri, searchObject);
-            setAnalysisProgress((currentIndex + 1) / assets.length);
-            return { asset, result };
-          } catch (error) {
-            console.error(`Error analyzing image ${currentIndex}:`, error);
-            return { asset, result: { containsObject: false, confidence: 0, description: '' } };
-          }
-        })
-      );
-
-      const matchingPhotos = results
-        .filter(({ result }) => result.containsObject && result.confidence > 0.5)
-        .map(({ asset }) => asset);
-
-      setFilteredPhotos(matchingPhotos);
-      onImagesLoaded?.(matchingPhotos.length);
-    } catch (error) {
-      console.error('Error in object search:', error);
-      showToast('Error analyzing images', 'error');
-    } finally {
-      setIsAnalyzing(false);
-      setAnalysisProgress(0);
-    }
-  };
-
-  // Update filtered photos when search query changes
-  useEffect(() => {
-    if (searchQuery && searchQuery.trim()) {
-      analyzeImagesForObject(photos, searchQuery.trim());
-    } else {
-      setFilteredPhotos(photos);
-      onImagesLoaded?.(photos.length);
-    }
-  }, [searchQuery, photos]);
-
   // Render image item
   const renderItem = ({ item, index }: { item: MediaLibrary.Asset; index: number }) => {
+    // Create a staggered animation effect
+    const animatedValue = new Animated.Value(0);
+    Animated.timing(animatedValue, {
+      toValue: 1,
+      duration: 300,
+      delay: index * 50,
+      useNativeDriver: true,
+    }).start();
+
+    const animatedStyle = {
+      opacity: animatedValue,
+      transform: [
+        {
+          scale: animatedValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.8, 1],
+          }),
+        },
+      ],
+    };
+
+    // Vary the height slightly for a masonry-like effect
+    const heightVariation = index % 3 === 0 ? 0 : index % 3 === 1 ? 20 : -20;
+    const itemHeight = imageSize + heightVariation;
+
     const isFavorite = favorites.includes(item.id);
     const isSelected = selectedItems.includes(item.id);
 
     return (
-      <ImageItem
-        item={item}
-        index={index}
-        isDark={isDark}
-        isFavorite={isFavorite}
-        isSelected={isSelected}
-        onPress={() => handleImagePress(item)}
-        onLongPress={() => handleLongPress(item)}
-      />
+      <Animated.View style={[styles.imageWrapper, animatedStyle]}>
+        <TouchableOpacity
+          style={[
+            styles.imageContainer,
+            {
+              height: itemHeight,
+              backgroundColor: isDark ? '#1c1c1e' : '#fff',
+            },
+            isSelected && styles.selectedImageContainer,
+          ]}
+          onPress={() => handleImagePress(item)}
+          onLongPress={() => handleLongPress(item)}
+          activeOpacity={0.7}>
+          <Image
+            source={{ uri: item.uri }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+          {isFavorite && !isSelectionMode && (
+            <View style={styles.favoriteIcon}>
+              <Text>❤️</Text>
+            </View>
+          )}
+          {isSelected && (
+            <View style={styles.selectionOverlay}>
+              <View style={styles.checkmarkContainer}>
+                <IconSymbol name="checkmark.circle.fill" size={24} color="#ffffff" />
+              </View>
+            </View>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
@@ -772,16 +692,8 @@ export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded, 
   return (
     <View style={{ flex: 1 }}>
       {renderAlbumHeader()}
-      {isAnalyzing && (
-        <View style={styles.analysisOverlay}>
-          <ActivityIndicator size="large" color={colors.tint} />
-          <ThemedText style={styles.analysisText}>
-            Analyzing images... {Math.round(analysisProgress * 100)}%
-          </ThemedText>
-        </View>
-      )}
       <FlatList
-        data={searchQuery ? filteredPhotos : photos}
+        data={photos}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         numColumns={numColumns}
@@ -793,25 +705,7 @@ export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded, 
         maxToRenderPerBatch={12}
         windowSize={21}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={loadImages}
-            tintColor={colors.tint}
-            colors={[colors.tint]}
-          />
-        }
-        ListEmptyComponent={
-          isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.tint} />
-            </View>
-          ) : searchQuery ? (
-            <View style={styles.emptyContainer}>
-              <ThemedText style={styles.emptyText}>
-                No pictures related to "{searchQuery}" found
-              </ThemedText>
-            </View>
-          ) : null
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       />
       {renderSelectionActionBar()}
@@ -1051,37 +945,5 @@ const styles = StyleSheet.create({
   passcodeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-  },
-  analysisOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  analysisText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#fff',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-    opacity: 0.7,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 }); 

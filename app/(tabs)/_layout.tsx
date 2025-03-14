@@ -129,6 +129,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="aicaption"
+        options={{
+          title: 'AI Caption',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[
+              styles.iconContainer,
+              focused && [styles.activeIconContainer, { backgroundColor: `${color}20` }]
+            ]}>
+              <IconSymbol size={22} name="chatbubble-outline" color={color} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',

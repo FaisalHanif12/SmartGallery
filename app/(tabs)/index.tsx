@@ -46,10 +46,6 @@ export default function HomeScreen() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    // Clear date filter when searching
-    if (query.trim()) {
-      setDateFilter({ month: null, year: null });
-    }
   };
 
   const handleProfilePress = () => {
@@ -127,7 +123,8 @@ export default function HomeScreen() {
       label: 'AI-Powered Image Q&A',
       icon: 'sparkles',
       onPress: () => {
-        // AI-powered image analysis coming soon
+        // Navigate to the AI Image Q&A screen
+        router.push('/imageqa');
       },
     },
     {
@@ -204,7 +201,6 @@ export default function HomeScreen() {
             onImagePress={handleImagePress}
             dateFilter={dateFilter}
             onImagesLoaded={handleImagesLoaded}
-            searchQuery={searchQuery}
           />
         )}
       </View>
