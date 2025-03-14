@@ -46,6 +46,10 @@ export default function HomeScreen() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
+    // Clear date filter when searching
+    if (query.trim()) {
+      setDateFilter({ month: null, year: null });
+    }
   };
 
   const handleProfilePress = () => {
@@ -200,6 +204,7 @@ export default function HomeScreen() {
             onImagePress={handleImagePress}
             dateFilter={dateFilter}
             onImagesLoaded={handleImagesLoaded}
+            searchQuery={searchQuery}
           />
         )}
       </View>
