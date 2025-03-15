@@ -93,15 +93,22 @@ cd smart-gallery
 
 2. Install dependencies
 ```
-   npm install
-   ```
+npm install
+```
 
-3. Start the development server
+3. Set up environment variables
+Create a `.env` file in the root directory with the following content:
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
+Replace `your_openai_api_key_here` with your actual OpenAI API key. You can get an API key by signing up at [OpenAI's platform](https://platform.openai.com/).
+
+4. Start the development server
 ```
 npm start
 ```
 
-4. Open the app on your device using the Expo Go app or run on an emulator
+5. Open the app on your device using the Expo Go app or run on an emulator
 
 ## Technologies Used
 
