@@ -167,12 +167,13 @@ export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded }
       setFavorites(newFavorites);
       await AsyncStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(newFavorites));
       
-      // Exit selection mode and show tab bar
+      // Exit selection mode
       setIsSelectionMode(false);
       setSelectedItems([]);
+      // Show tab bar after action is completed
       setTabBarVisible(true);
       
-      // Show success toast instead of alert with the stored count
+      // Show success toast
       showToast(`${selectedCount} items added to favorites`, 'success');
       
       // Reload images if we're in favorites category
@@ -233,7 +234,7 @@ export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded }
         await AsyncStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(newFavorites));
       }
       
-      // Exit selection mode and show tab bar
+      // Exit selection mode and show tab bar after action is completed
       setIsSelectionMode(false);
       setSelectedItems([]);
       setTabBarVisible(true);
@@ -289,7 +290,7 @@ export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded }
       
       await addToHidden(selectedItems);
       
-      // Exit selection mode and show tab bar
+      // Exit selection mode and show tab bar after action is completed
       setIsSelectionMode(false);
       setSelectedItems([]);
       setTabBarVisible(true);
@@ -431,9 +432,10 @@ export function ImageGrid({ category, onImagePress, dateFilter, onImagesLoaded }
     
     setSelectedItems(newSelectedItems);
     
-    // Exit selection mode if no items selected
+    // Exit selection mode and show tab bar if no items selected
     if (newSelectedItems.length === 0) {
       setIsSelectionMode(false);
+      setTabBarVisible(true);
     }
   };
 

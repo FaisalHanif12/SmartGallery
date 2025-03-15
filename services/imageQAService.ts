@@ -1,5 +1,4 @@
-// Use the provided API key
-const OPENAI_API_KEY = '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';
+import { OPENAI_API_KEY } from '@env';
 
 // Function to convert image to base64
 const imageToBase64 = async (uri: string): Promise<string> => {
